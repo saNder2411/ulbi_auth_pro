@@ -1,25 +1,32 @@
-import express from 'express'
-import ENV from 'dotenv'
-import cors from 'cors'
-import cookieParser from 'cookie-parser'
-import mongoose from 'mongoose'
-ENV.config()
-const PORT = process.env.PORT || 5000
+import { Container, ContainerModule, interfaces } from 'inversify'
 
-const app = express()
+import { App } from './app'
+import { ConfigService } from './config/config.service'
+import { IConfigService } from './config/config.service.interface'
+import { TYPES } from './types'
+import { UserController } from './user/user.controller'
+import { IUserController } from './user/user.controller.interface'
+import { IUserModel, UserModel } from './user/user.model'
+import { UserService } from './user/user.service'
+import { IUserService } from './user/user.service.interface'
 
-app.use(express.json())
-app.use(cookieParser())
-app.use(cors())
+export const appBindings = new ContainerModule((bind: interfaces.Bind) => {
+	bind<IUserModel>(TYPES.IUserModel).toConstantValue(UserModel)
+	bind<IConfigService>(TYPES.IConfigService).to(ConfigService).inSingletonScope()
+	bind<IUserController>(TYPES.IUserController).to(UserController)
+	bind<IUserService>(TYPES.IUserService).to(UserService)
 
-const start = async () => {
-	try {
-		await mongoose.connect(process.env.DB_URL ?? '')
+	bind<App>(TYPES.App).to(App)
+})
 
-		app.listen(PORT, () => console.log(`listening on port http://localhost:${PORT}`))
-	} catch (err) {
-		console.log(err)
-	}
+const bootstrap = async () => {
+	const appContainer = new Container()
+	appContainer.load(appBindings)
+
+	const app = appContainer.get<App>(TYPES.App)
+	await app.init()
+
+	return { app, appContainer }
 }
 
-start()
+export const boot = bootstrap()
