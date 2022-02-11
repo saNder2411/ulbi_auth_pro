@@ -12,12 +12,15 @@ import { UserReqDTO } from './dto/user.dto'
 import { IUserController } from './user.controller.interface'
 import { IUserService } from './user.service.interface'
 import { HttpError } from '../exception/http.error.class'
+import { ITokenService } from '../token/token.service.interface'
+import { AuthMiddleware } from '../middlewares/auth.middleware'
 
 @injectable()
 export class UserController extends BaseController implements IUserController {
 	constructor(
+		@inject(TYPES.IConfigService) private configService: IConfigService,
 		@inject(TYPES.IUserService) private userService: IUserService,
-		@inject(TYPES.IConfigService) private configService: IConfigService
+		@inject(TYPES.ITokenService) private tokenService: ITokenService
 	) {
 		super()
 
@@ -56,7 +59,7 @@ export class UserController extends BaseController implements IUserController {
 				path: '/users',
 				methodKey: 'get',
 				callback: this.getUsers,
-				middlewares: [],
+				middlewares: [new AuthMiddleware(this.tokenService)],
 			},
 		])
 	}
@@ -102,6 +105,13 @@ export class UserController extends BaseController implements IUserController {
 
 	public async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
 		try {
+			const { refreshToken } = req.cookies
+
+			const token = await this.userService.logout(refreshToken)
+
+			res.clearCookie('refreshToken')
+
+			this.ok(res, token)
 		} catch (err) {
 			next(err)
 		}
@@ -119,6 +129,13 @@ export class UserController extends BaseController implements IUserController {
 
 	public async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
 		try {
+			const { refreshToken } = req.cookies
+
+			const userData = await this.userService.refresh(refreshToken)
+
+			res.cookie('refreshToken', userData.refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true })
+
+			this.ok(res, userData)
 		} catch (err) {
 			next(err)
 		}
@@ -126,8 +143,8 @@ export class UserController extends BaseController implements IUserController {
 
 	public async getUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
 		try {
-			const result = await this.userService.getUsers()
-			res.json(result)
+			const users = await this.userService.getUsers()
+			this.ok(res, users)
 		} catch (err) {
 			next(err)
 		}

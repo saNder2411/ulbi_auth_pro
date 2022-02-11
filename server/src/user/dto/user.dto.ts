@@ -1,6 +1,12 @@
 import { Types } from 'mongoose'
 
-export class UserDTO {
+export interface IUserDTO {
+	_id: Types.ObjectId
+	email: string
+	isActivated: boolean
+}
+
+export class UserDTO implements IUserDTO{
 	_id: Types.ObjectId
 	email: string
 	isActivated: boolean

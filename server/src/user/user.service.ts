@@ -7,9 +7,9 @@ import { v4 } from 'uuid'
 import { IConfigService } from '../config/config.service.interface'
 import { ITokenService } from '../token/token.service.interface'
 import { TYPES } from '../types'
-import { UserDTO, UserReqDTO } from './dto/user.dto'
+import { UserDTO, UserReqDTO, IUserDTO } from './dto/user.dto'
 import { IMailService } from './mail.service.interface'
-import { IUserModel } from './user.model'
+import { IUserModel, UserDoc } from './user.model'
 import { IUserService, UserDataReturnValue } from './user.service.interface'
 import { HttpError } from '../exception/http.error.class'
 
@@ -82,11 +82,41 @@ export class UserService implements IUserService {
 		await this.tokenService.saveToken(userDTO._id, refreshToken)
 
 		return { accessToken, refreshToken, user: userDTO }
-
-
 	}
 
-	public async getUsers(): Promise<string[]> {
-		return ['123', '456']
+	public async logout(refreshToken: string): Promise<number> {
+		return this.tokenService.removeToken(refreshToken)
+	}
+
+	public async refresh(refreshToken?: string): UserDataReturnValue {
+		if (!refreshToken) {
+			throw HttpError.UnauthorizedError()
+		}
+
+		const userData = this.tokenService.validateRefreshToken<IUserDTO>(refreshToken)
+
+		const tokenFromDb = await this.tokenService.findToken(refreshToken)
+
+		if (!userData || !tokenFromDb) {
+			throw HttpError.UnauthorizedError()
+		}
+
+		const user = await this.userModel.findById(userData._id)
+		if (!user) {
+			throw HttpError.BadRequest(`Something was wrong!`, [`Something was wrong!`])
+		}
+
+		const userDTO = new UserDTO(user)
+
+		const tokens = this.tokenService.generateTokens({ ...userDTO })
+
+		await this.tokenService.saveToken(userDTO._id, tokens.refreshToken)
+
+		return { ...tokens, user: userDTO }
+	}
+
+	public async getUsers(): Promise<UserDoc[]> {
+		const users = await this.userModel.find()
+		return users
 	}
 }

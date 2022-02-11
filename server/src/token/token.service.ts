@@ -1,7 +1,7 @@
 import 'reflect-metadata'
 
 import { inject, injectable } from 'inversify'
-import { sign } from 'jsonwebtoken'
+import { sign, verify } from 'jsonwebtoken'
 import { Types } from 'mongoose'
 
 import { IConfigService } from '../config/config.service.interface'
@@ -16,14 +16,14 @@ export class TokenService implements ITokenService {
 		@inject(TYPES.ITokenModel) private tokenModel: ITokenModel
 	) {}
 
-	generateTokens<T extends object>(payload: T): { accessToken: string; refreshToken: string } {
+	public generateTokens<T extends object>(payload: T): { accessToken: string; refreshToken: string } {
 		const accessToken = sign(payload, this.configService.get('JWT_ACCESS_SECRET'), { expiresIn: '30m' })
 		const refreshToken = sign(payload, this.configService.get('JWT_REFRESH_SECRET'), { expiresIn: '30d' })
 
 		return { accessToken, refreshToken }
 	}
 
-	async saveToken(userId: Types.ObjectId, refreshToken: string): Promise<TokenDoc> {
+	public async saveToken(userId: Types.ObjectId, refreshToken: string): Promise<TokenDoc> {
 		const tokenData = await this.tokenModel.findOne({ userId })
 
 		if (tokenData) {
@@ -33,5 +33,35 @@ export class TokenService implements ITokenService {
 
 		const token = await this.tokenModel.create({ userId, refreshToken })
 		return token
+	}
+
+	public async removeToken(refreshToken: string): Promise<number> {
+		const tokenData = await this.tokenModel.deleteOne({ refreshToken })
+
+		return tokenData.deletedCount
+	}
+
+	public async findToken(refreshToken: string): Promise<TokenDoc | null> {
+		const tokenData = await this.tokenModel.findOne({ refreshToken })
+
+		return tokenData
+	}
+
+	public validateAccessToken<T extends object = object>(token: string): T | null {
+		try {
+			const userData = verify(token, this.configService.get('JWT_ACCESS_SECRET'))
+			return userData as T
+		} catch (err) {
+			return null
+		}
+	}
+
+	public validateRefreshToken<T extends object = object>(token: string): T | null {
+		try {
+			const userData = verify(token, this.configService.get('JWT_REFRESH_SECRET'))
+			return userData as T
+		} catch (err) {
+			return null
+		}
 	}
 }
