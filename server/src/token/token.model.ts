@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose'
+import { Schema, model, Types } from 'mongoose'
 
 export interface TokenSchema {
 	userId: Schema.Types.ObjectId
@@ -6,7 +6,7 @@ export interface TokenSchema {
 }
 
 export interface TokenDoc extends TokenSchema {
-	_id: string
+	_id: Types.ObjectId
 }
 
 const TokenSchema = new Schema<TokenSchema>({

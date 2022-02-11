@@ -11,6 +11,7 @@ import { inject, injectable } from 'inversify'
 import { IConfigService } from './config/config.service.interface'
 import { TYPES } from './types'
 import { IUserController } from './user/user.controller.interface'
+import { IExceptionFilter } from './exception/exception.filter.interface'
 
 @injectable()
 export class App {
@@ -19,7 +20,8 @@ export class App {
 
 	constructor(
 		@inject(TYPES.IUserController) private userController: IUserController,
-		@inject(TYPES.IConfigService) private configService: IConfigService
+		@inject(TYPES.IConfigService) private configService: IConfigService,
+		@inject(TYPES.IExceptionFilter) private exceptionFilter: IExceptionFilter
 	) {
 		this.app = express()
 	}
@@ -34,13 +36,18 @@ export class App {
 		this.app.use('/api', this.userController.router)
 	}
 
+	useExceptionFilters() {
+		this.app.use(this.exceptionFilter.catch.bind(this.exceptionFilter))
+	}
+
 	async init() {
 		this.useMiddleware()
 		this.useRoutes()
+		this.useExceptionFilters()
 		try {
 			await mongoose.connect(this.configService.get('DB_URL'))
 
-			this.server = this.app.listen(this.configService.get('PORT'), () =>
+			this.server = this.app.listen(+this.configService.get('PORT'), () =>
 				console.log(`Server run on: http://localhost:${this.configService.get('PORT')}`)
 			)
 		} catch (err) {

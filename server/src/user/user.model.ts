@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose'
+import { Schema, model, Types } from 'mongoose'
 
 export interface UserSchema {
 	email: string
@@ -8,7 +8,7 @@ export interface UserSchema {
 }
 
 export interface UserDoc extends UserSchema {
-	_id: string
+	_id: Types.ObjectId
 }
 
 const UserSchema = new Schema<UserSchema>({

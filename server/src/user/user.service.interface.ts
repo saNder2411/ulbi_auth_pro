@@ -1,7 +1,13 @@
-import { UserDoc } from './user.model'
+import { UserDTO, UserReqDTO } from './dto/user.dto'
+
+export type UserDataReturnValue = Promise<{ accessToken: string; refreshToken: string; user: UserDTO }>
 
 export interface IUserService {
-	register({ email, password }: { email: string; password: string }): Promise<UserDoc | null>
+	register: (userDTO: UserReqDTO) => UserDataReturnValue
 
-	getUsers(): Promise<string[]>
+	login: (userDTO: UserReqDTO) => UserDataReturnValue
+
+	activate: (activationLink: string) => Promise<void>
+
+	getUsers: () => Promise<string[]>
 }
