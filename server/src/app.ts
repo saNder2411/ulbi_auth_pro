@@ -29,7 +29,7 @@ export class App {
 	useMiddleware() {
 		this.app.use(express.json())
 		this.app.use(cookieParser())
-		this.app.use(cors())
+		this.app.use(cors({ credentials: true, origin: this.configService.get('CLIENT_URL') }))
 	}
 
 	useRoutes() {

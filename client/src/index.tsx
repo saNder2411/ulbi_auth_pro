@@ -1,6 +1,14 @@
+import './index.css'
+
 import React from 'react'
 import ReactDOM from 'react-dom'
-import './index.css'
-import App from './App'
 
-ReactDOM.render(<App />, document.getElementById('root'))
+import { App } from './App'
+import { StoreProvider } from './store/context'
+
+ ReactDOM.render(
+	<StoreProvider>
+		<App />
+	</StoreProvider>,
+	document.getElementById('root')
+)

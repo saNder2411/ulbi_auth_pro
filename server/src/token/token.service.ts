@@ -17,8 +17,8 @@ export class TokenService implements ITokenService {
 	) {}
 
 	public generateTokens<T extends object>(payload: T): { accessToken: string; refreshToken: string } {
-		const accessToken = sign(payload, this.configService.get('JWT_ACCESS_SECRET'), { expiresIn: '30m' })
-		const refreshToken = sign(payload, this.configService.get('JWT_REFRESH_SECRET'), { expiresIn: '30d' })
+		const accessToken = sign(payload, this.configService.get('JWT_ACCESS_SECRET'), { expiresIn: '15s' })
+		const refreshToken = sign(payload, this.configService.get('JWT_REFRESH_SECRET'), { expiresIn: '30s' })
 
 		return { accessToken, refreshToken }
 	}
